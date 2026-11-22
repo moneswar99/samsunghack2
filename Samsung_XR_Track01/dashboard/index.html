@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Samsung XR Hackathon 2026 – Synthetic Gaze & Virtual Camera Dashboard</title>
+  <!-- Three.js from CDN for interactive 3D WebGL viewer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0a0e14;
+      --card-bg: #131923;
+      --card-border: #1f2a3a;
+      --accent: #2563eb;
+      --accent-glow: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+    body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
+    
+    /* Top Header */
+    header {
+      background: linear-gradient(180deg, #162032 0%, #0d131f 100%);
+      border-bottom: 1px solid var(--card-border);
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+    }
+    .brand-text h1 { font-size: 20px; font-weight: 700; color: #fff; }
+    .brand-text p { font-size: 12px; color: var(--cyan); letter-spacing: 0.5px; }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .dot-pulse { width: 8px; height: 8px; background: #34d399; border-radius: 50%; box-shadow: 0 0 10px #34d399; }
+
+    /* Navigation Tabs */
+    .tabs-bar {
+      display: flex;
+      gap: 12px;
+      padding: 16px 32px;
+      background: #0f1520;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab-btn.active { color: #fff; background: var(--accent); box-shadow: 0 2px 12px rgba(37,99,235,0.4); }
+
+    /* Main Container */
+    main { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Grid Layouts */
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-player { display: grid; grid-template-columns: 600px 1fr; gap: 28px; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 12px;
+    }
+
+    /* Render Player */
+    .viewport-box {
+      position: relative;
+      width: 100%;
+      height: 550px;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #2a384c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .viewport-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .pupil-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    /* Player Controls */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .btn-play {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-play:hover { background: #1d4ed8; }
+    .slider-container { flex: 1; display: flex; align-items: center; gap: 12px; }
+    input[type=range] {
+      flex: 1;
+      accent-color: var(--cyan);
+      height: 6px;
+      cursor: pointer;
+    }
+
+    /* Metrics Cards */
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 18px; }
+    .metric-box {
+      background: #0c111a;
+      border: 1px solid #1a2332;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .metric-val { font-size: 18px; font-weight: 700; color: #fff; margin-top: 4px; font-family: monospace; }
+    .metric-val.cyan { color: var(--cyan); }
+    .metric-val.green { color: var(--green); }
+
+    /* Interactive 2D Joystick */
+    .joystick-pad {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1a2436 0%, #0c121c 100%);
+      border: 2px solid var(--accent);
+      position: relative;
+      margin: 0 auto 16px;
+      cursor: crosshair;
+      box-shadow: 0 0 20px rgba(37,99,235,0.25);
+    }
+    .joystick-handle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .joystick-axes {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .btn-sm {
+      background: #1c2636;
+      border: 1px solid #2e3d54;
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sm:hover { background: #28374d; color: #fff; }
+
+    /* 3D WebGL Viewport */
+    #three-viewport {
+      width: 100%;
+      height: 380px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #1f2a3a;
+    }
+
+    /* Metadata Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { background: #182232; padding: 12px 14px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--card-border); }
+    td { padding: 10px 14px; border-bottom: 1px solid #182232; font-family: monospace; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Test Badges */
+    .test-list { display: flex; flex-direction: column; gap: 10px; }
+    .test-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0e1420;
+      border: 1px solid #1e2838;
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+    .test-name { font-weight: 600; font-size: 14px; }
+    .test-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .badge-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 10px; border-radius: 12px; font-weight: 700; font-size: 12px; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    /* Contact Sheet */
+    .contact-img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--card-border); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">SAMSUNG XR</div>
+      <div class="brand-text">
+        <h1>Track 01: Synthetic Eye Movement & Virtual Camera</h1>
+        <p>SAMSUNG R&D INSTITUTE INDIA HACKATHON 2026</p>
+      </div>
+    </div>
+    <div class="badge-status">
+      <div class="dot-pulse"></div>
+      <span>All 9 Tests Passed (0.087s)</span>
+    </div>
+  </header>
+
+  <nav class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('tab-player')">🎬 Gaze Sequence Player</button>
+    <button class="tab-btn" onclick="switchTab('tab-simulator')">🕹️ Live 3D Gaze Simulator</button>
+    <button class="tab-btn" onclick="switchTab('tab-metadata')">📊 Ground-Truth Metadata</button>
+    <button class="tab-btn" onclick="switchTab('tab-contact')">🖼️ 5×2 Contact Sheet</button>
+    <button class="tab-btn" onclick="switchTab('tab-tests')">✅ Automated Verification Suite</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: GAZE SEQUENCE PLAYER -->
+    <div id="tab-player" class="tab-pane active">
+      <div class="grid-player">
+        <div>
+          <div class="card">
+            <div class="card-title">
+              <span>Virtual Camera View (1024 × 1024 PNG)</span>
+              <span id="frame-badge" style="color: var(--cyan); font-family: monospace;">Frame 00 / 09</span>
+            </div>
+            <div class="viewport-box">
+              <img id="render-img" src="/renders/frame_00.png" alt="Gaze Frame">
+              <svg id="pupil-svg" class="pupil-overlay" viewBox="0 0 1024 1024">
+                <!-- Left Eye Pupil Reticle -->
+                <circle id="reticle-l" cx="625.3" cy="497.0" r="14" fill="none" stroke="#ef4444" stroke-width="3" />
+                <line id="line-lx1" x1="605" y1="497.0" x2="645" y2="497.0" stroke="#ef4444" stroke-width="2" />
+                <line id="line-ly1" x1="625.3" y1="477" x2="625.3" y2="517" stroke="#ef4444" stroke-width="2" />
+                <!-- Right Eye Pupil Reticle -->
+                <circle id="reticle-r" cx="398.7" cy="497.0" r="14" fill="none" stroke="#06b6d4" stroke-width="3" />
+                <line id="line-rx1" x1="378" y1="497.0" x2="418" y2="497.0" stroke="#06b6d4" stroke-width="2" />
+                <line id="line-ry1" x1="398.7" y1="477" x2="398.7" y2="517" stroke="#06b6d4" stroke-width="2" />
+              </svg>
+            </div>
+            <div class="controls-row">
+              <button id="btn-play" class="btn-play" onclick="togglePlay()">▶ Play Animation</button>
+              <div class="slider-container">
+                <span style="font-size: 13px; color: var(--text-muted);">Frame:</span>
+                <input type="range" id="frame-slider" min="0" max="9" value="0" oninput="setFrame(parseInt(this.value))">
+                <span id="slider-val" style="font-family: monospace; font-weight: 700; width: 24px;">0</span>
+              </div>
+              <label style="font-size: 13px; color: #cbd5e1; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="chk-overlay" checked onchange="toggleOverlay(this.checked)"> Pupil Reticles
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-title">Real-Time Frame Metrics</div>
+            <div class="metric-grid">
+              <div class="metric-box">
+                <div class="metric-label">Circular Angle (θ)</div>
+                <div id="m-theta" class="metric-val cyan">0.000 rad (0.0°)</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Gaze Vector (h, v)</div>
+                <div id="m-hv" class="metric-val green">h: +0.00, v: +1.00</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Left Pupil (px, py)</div>
+                <div id="m-pupil-l" class="metric-val">X=625.3, Y=497.0</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Right Pupil (px, py)</div>
+                <div id="m-pupil-r" class="metric-val">X=398.7, Y=497.0</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Left Eye 3D Rotation</div>
+                <div id="m-rot-l" class="metric-val">[+19.92°, -0.0°, +174.78°]</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Right Eye 3D Rotation</div>
+                <div id="m-rot-r" class="metric-val">[+19.92°, +0.0°, -174.78°]</div>
+              </div>
+            </div>
+
+            <div class="card-title" style="margin-top: 14px;">Camera & Fixation Parameters</div>
+            <div style="font-size: 13px; line-height: 1.8; color: var(--text-muted);">
+              <div>• <b>Fixation Target Distance:</b> <span style="color:#fff;">35 cm (0.35 m)</span> forward from eye midpoint</div>
+              <div>• <b>Camera Distance:</b> <span style="color:#fff;">40 cm (0.40 m)</span> forward, fixed during sequence</div>
+              <div>• <b>Sensor Dimensions:</b> <span style="color:#fff;">36.0 mm × 36.0 mm</span> (1:1 square sensor)</div>
+              <div>• <b>Focal Length:</b> <span style="color:#fff;">50.0 mm</span> ($f_x = f_y = 1422.22$ px)</div>
+              <div>• <b>Resolution:</b> <span style="color:#fff;">1024 × 1024 pixels</span>, 8-bit RGB PNG</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE 3D GAZE SIMULATOR -->
+    <div id="tab-simulator" class="tab-pane">
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-title">Interactive 2D Gaze Touchpad (h, v)</div>
+          <div id="joystick" class="joystick-pad">
+            <svg class="joystick-axes" viewBox="0 0 240 240">
+              <line x1="120" y1="0" x2="120" y2="240" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4" />
+              <line x1="0" y1="120" x2="240" y2="120" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4" />
+              <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(6,182,212,0.3)" />
+              <text x="124" y="20" fill="#94a3b8" font-size="11">UP (+V)</text>
+              <text x="124" y="232" fill="#94a3b8" font-size="11">DOWN (-V)</text>
+              <text x="180" y="115" fill="#94a3b8" font-size="11">RIGHT (+H)</text>
+              <text x="10" y="115" fill="#94a3b8" font-size="11">LEFT (-H)</text>
+            </svg>
+            <div id="joy-handle" class="joystick-handle"></div>
+          </div>
+          <div class="btn-group">
+            <button class="btn-sm" onclick="setJoyPos(0.0, 0.0)">🎯 Center Reset</button>
+            <button class="btn-sm" onclick="setJoyPos(-1.0, 0.0)">⬅️ Left</button>
+            <button class="btn-sm" onclick="setJoyPos(1.0, 0.0)">➡️ Right</button>
+            <button class="btn-sm" onclick="setJoyPos(0.0, 1.0)">⬆️ Up</button>
+            <button class="btn-sm" onclick="setJoyPos(0.0, -1.0)">⬇️ Down</button>
+          </div>
+          <div style="margin-top: 18px; font-size: 13px; color: var(--text-muted); text-align: center;">
+            Drag your mouse inside the circle to command real-time 3D eye rotation!
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Real-Time 3D WebGL Eye Model</span>
+            <span style="font-size: 12px; color: var(--cyan);">Physical Rotation Pivots</span>
+          </div>
+          <div id="three-viewport"></div>
+          <div class="metric-grid" style="margin-top: 16px;">
+            <div class="metric-box">
+              <div class="metric-label">3D Fixation Target (m)</div>
+              <div id="live-target" class="metric-val cyan">X: +0.00, Y: -0.35, Z: +0.00</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Binocular Convergence (α)</div>
+              <div id="live-vergence" class="metric-val green">5.23° inward</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: METADATA EXPLORER -->
+    <div id="tab-metadata" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>Ground-Truth Metadata (metadata.json)</span>
+          <a href="/metadata.json" download="metadata.json" class="btn-sm" style="text-decoration:none;">⬇️ Download JSON</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Frame</th>
+              <th>θ (rad)</th>
+              <th>Input (h, v)</th>
+              <th>Left Eye 3D Rot</th>
+              <th>Right Eye 3D Rot</th>
+              <th>Pupil L (px, py)</th>
+              <th>Pupil R (px, py)</th>
+            </tr>
+          </thead>
+          <tbody id="metadata-tbody">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: CONTACT SHEET -->
+    <div id="tab-contact" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>5 × 2 Annotated Contact Sheet Overview</span>
+          <a href="/contact_sheet.png" download="contact_sheet.png" class="btn-sm" style="text-decoration:none;">⬇️ Download PNG (2220 × 1120)</a>
+        </div>
+        <img class="contact-img" src="/contact_sheet.png" alt="Contact Sheet">
+      </div>
+    </div>
+
+    <!-- TAB 5: AUTOMATED TESTS -->
+    <div id="tab-tests" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>Official 9-Point Verification Suite</span>
+          <span class="badge-pass">ALL 9 PASSED</span>
+        </div>
+        <div class="test-list">
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_01_blender_scene_exists</div>
+              <div class="test-desc">Verifies scene.blend exists and integrity is verified (219 KB)</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_02_eye_bones_and_pivots</div>
+              <div class="test-desc">Verifies Eye_L and Eye_R bones exist with exact physical center pivots at ±0.032m</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_03_camera_calibration_and_distance</div>
+              <div class="test-desc">Verifies camera fixed at 40 cm (0.40m) forward from eye midpoint, f=50mm</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_04_resolution_and_format</div>
+              <div class="test-desc">Verifies render resolution is 1024 × 1024 and format is 8-bit PNG</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_05_five_direction_gaze_movement</div>
+              <div class="test-desc">Verifies 2D pupil displacement vectors for Left, Right, Up, Down, and Reset</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_06_reset_drift_free_reliability</div>
+              <div class="test-desc">Verifies repeated multi-direction gaze sequences accumulate zero drift (&lt; 0.005 px)</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_07_ten_rendered_frames_exist_and_valid</div>
+              <div class="test-desc">Verifies all 10 PNG frames exist with valid headers and 1024x1024 resolution</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_08_metadata_json_schema_and_values</div>
+              <div class="test-desc">Verifies 10 valid JSON records matching required structure and math</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+          <div class="test-item">
+            <div>
+              <div class="test-name">test_09_contact_sheet_exists</div>
+              <div class="test-desc">Verifies contact_sheet.png exists, valid PNG headers and resolution (2220x1120)</div>
+            </div>
+            <span class="badge-pass">PASS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let metadata = [];
+    let currentFrame = 0;
+    let isPlaying = false;
+    let playTimer = null;
+
+    // Direction names for 10 frames
+    const dirNames = [
+      "Up (Top)", "Up-Right", "Right-Up", "Right-Down", "Down-Right",
+      "Down (Bottom)", "Down-Left", "Left-Down", "Left-Up", "Up-Left"
+    ];
+
+    async function loadData() {
+      try {
+        const res = await fetch('/metadata.json');
+        metadata = await res.json();
+        populateMetadataTable();
+        updatePlayerUI(0);
+      } catch(e) {
+        console.error("Failed to load metadata.json", e);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tab-simulator') {
+        initThreeJS();
+      }
+    }
+
+    function setFrame(k) {
+      currentFrame = k;
+      document.getElementById('frame-slider').value = k;
+      document.getElementById('slider-val').innerText = k;
+      updatePlayerUI(k);
+    }
+
+    function updatePlayerUI(k) {
+      if (!metadata || metadata.length === 0) return;
+      const rec = metadata[k];
+      document.getElementById('render-img').src = `/renders/frame_${String(k).padStart(2, '0')}.png`;
+      document.getElementById('frame-badge').innerText = `Frame ${String(k).padStart(2, '0')} / 09 (${dirNames[k]})`;
+
+      // Update Reticles
+      const px_l = rec.pupil_center_2D_L[0];
+      const py_l = rec.pupil_center_2D_L[1];
+      const px_r = rec.pupil_center_2D_R[0];
+      const py_r = rec.pupil_center_2D_R[1];
+
+      document.getElementById('reticle-l').setAttribute('cx', px_l);
+      document.getElementById('reticle-l').setAttribute('cy', py_l);
+      document.getElementById('line-lx1').setAttribute('x1', px_l - 20);
+      document.getElementById('line-lx1').setAttribute('x2', px_l + 20);
+      document.getElementById('line-lx1').setAttribute('y1', py_l);
+      document.getElementById('line-lx1').setAttribute('y2', py_l);
+      document.getElementById('line-ly1').setAttribute('x1', px_l);
+      document.getElementById('line-ly1').setAttribute('x2', px_l);
+      document.getElementById('line-ly1').setAttribute('y1', py_l - 20);
+      document.getElementById('line-ly1').setAttribute('y2', py_l + 20);
+
+      document.getElementById('reticle-r').setAttribute('cx', px_r);
+      document.getElementById('reticle-r').setAttribute('cy', py_r);
+      document.getElementById('line-rx1').setAttribute('x1', px_r - 20);
+      document.getElementById('line-rx1').setAttribute('x2', px_r + 20);
+      document.getElementById('line-rx1').setAttribute('y1', py_r);
+      document.getElementById('line-rx1').setAttribute('y2', py_r);
+      document.getElementById('line-ry1').setAttribute('x1', px_r);
+      document.getElementById('line-ry1').setAttribute('x2', px_r);
+      document.getElementById('line-ry1').setAttribute('y1', py_r - 20);
+      document.getElementById('line-ry1').setAttribute('y2', py_r + 20);
+
+      // Metrics
+      document.getElementById('m-theta').innerText = `${rec.theta.toFixed(3)} rad (${(rec.theta * 180 / Math.PI).toFixed(1)}°)`;
+      document.getElementById('m-hv').innerText = `h: ${rec.input.h >= 0 ? '+' : ''}${rec.input.h.toFixed(2)}, v: ${rec.input.v >= 0 ? '+' : ''}${rec.input.v.toFixed(2)}`;
+      document.getElementById('m-pupil-l').innerText = `X=${px_l.toFixed(1)}, Y=${py_l.toFixed(1)}`;
+      document.getElementById('m-pupil-r').innerText = `X=${px_r.toFixed(1)}, Y=${py_r.toFixed(1)}`;
+      document.getElementById('m-rot-l').innerText = `[${rec.eye_rotation_L.map(v => v.toFixed(2) + '°').join(', ')}]`;
+      document.getElementById('m-rot-r').innerText = `[${rec.eye_rotation_R.map(v => v.toFixed(2) + '°').join(', ')}]`;
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      const btn = document.getElementById('btn-play');
+      if (isPlaying) {
+        btn.innerText = "⏸ Pause Animation";
+        playTimer = setInterval(() => {
+          setFrame((currentFrame + 1) % 10);
+        }, 500);
+      } else {
+        btn.innerText = "▶ Play Animation";
+        clearInterval(playTimer);
+      }
+    }
+
+    function toggleOverlay(checked) {
+      document.getElementById('pupil-svg').style.display = checked ? 'block' : 'none';
+    }
+
+    function populateMetadataTable() {
+      const tbody = document.getElementById('metadata-tbody');
+      tbody.innerHTML = '';
+      metadata.forEach(rec => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:var(--cyan); font-weight:700;">${String(rec.frame).padStart(2, '0')}</td>
+          <td>${rec.theta.toFixed(4)}</td>
+          <td style="color:#34d399;">h: ${rec.input.h >= 0 ? '+' : ''}${rec.input.h.toFixed(4)}, v: ${rec.input.v >= 0 ? '+' : ''}${rec.input.v.toFixed(4)}</td>
+          <td>[${rec.eye_rotation_L.map(v => v.toFixed(1) + '°').join(', ')}]</td>
+          <td>[${rec.eye_rotation_R.map(v => v.toFixed(1) + '°').join(', ')}]</td>
+          <td>(${rec.pupil_center_2D_L[0].toFixed(1)}, ${rec.pupil_center_2D_L[1].toFixed(1)})</td>
+          <td>(${rec.pupil_center_2D_R[0].toFixed(1)}, ${rec.pupil_center_2D_R[1].toFixed(1)})</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 2D Joystick Controller
+    const joy = document.getElementById('joystick');
+    const handle = document.getElementById('joy-handle');
+    let isDragging = false;
+
+    joy.addEventListener('mousedown', (e) => { isDragging = true; updateJoystick(e); });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) updateJoystick(e); });
+
+    function updateJoystick(e) {
+      const rect = joy.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const maxR = 100;
+
+      let dx = e.clientX - cx;
+      let dy = e.clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+      }
+
+      handle.style.left = (120 + dx) + 'px';
+      handle.style.top = (120 + dy) + 'px';
+
+      const norm_h = dx / maxR;
+      const norm_v = -dy / maxR; // Up is positive
+      updateGazePhysics(norm_h, norm_v);
+    }
+
+    function setJoyPos(h, v) {
+      const maxR = 100;
+      handle.style.left = (120 + h * maxR) + 'px';
+      handle.style.top = (120 - v * maxR) + 'px';
+      updateGazePhysics(h, v);
+    }
+
+    function updateGazePhysics(h, v) {
+      const D = 0.35; // 35 cm fixation distance
+      const max_yaw = 25 * Math.PI / 180;
+      const max_pitch = 20 * Math.PI / 180;
+
+      const tx = D * Math.tan(h * max_yaw);
+      const tz = D * Math.tan(v * max_pitch);
+      const ty = -D;
+
+      document.getElementById('live-target').innerText = `X: ${tx >= 0 ? '+' : ''}${tx.toFixed(3)}m, Y: ${ty.toFixed(2)}m, Z: ${tz >= 0 ? '+' : ''}${tz.toFixed(3)}m`;
+
+      // Convergence angle
+      const dL = Math.hypot(tx - 0.032, tz);
+      const alpha = Math.atan2(0.064, D) * 180 / Math.PI;
+      document.getElementById('live-vergence').innerText = `${alpha.toFixed(2)}° inward convergence`;
+
+      // Update Three.js Eyes if loaded
+      if (eyeMeshL && eyeMeshR) {
+        const targetVec = new THREE.Vector3(tx, tz, -ty);
+        eyeMeshL.lookAt(targetVec);
+        eyeMeshR.lookAt(targetVec);
+      }
+    }
+
+    // 3D Three.js WebGL Viewport
+    let scene3D, camera3D, renderer3D, eyeMeshL, eyeMeshR;
+    let threeInitialized = false;
+
+    function initThreeJS() {
+      if (threeInitialized) return;
+      threeInitialized = true;
+
+      const container = document.getElementById('three-viewport');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      scene3D = new THREE.Scene();
+      scene3D.background = new THREE.Color(0x0a0f18);
+
+      camera3D = new THREE.PerspectiveCamera(45, w / h, 0.05, 10);
+      camera3D.position.set(0, 0, 0.40); // 40 cm distance
+      camera3D.lookAt(0, 0, 0);
+
+      // Studio Lights
+      const keyLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+      keyLight.position.set(0.35, 0.30, 0.40);
+      scene3D.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0xeef4ff, 0.8);
+      fillLight.position.set(-0.35, 0.15, 0.30);
+      scene3D.add(fillLight);
+
+      const ambLight = new THREE.AmbientLight(0x404855, 0.6);
+      scene3D.add(ambLight);
+
+      // Eyeball Geometry (Radius 0.012m = 12mm)
+      const eyeGeo = new THREE.SphereGeometry(0.012, 32, 32);
+
+      // Sclera + Iris materials
+      const scleraMat = new THREE.MeshPhongMaterial({ color: 0xf5f3f0, shininess: 90 });
+      const irisMat = new THREE.MeshPhongMaterial({ color: 0x6e4a28, shininess: 100 });
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
+
+      function createEye(posX) {
+        const eyeGroup = new THREE.Group();
+        eyeGroup.position.set(posX, 0, 0);
+
+        // Eyeball sphere
+        const eyeball = new THREE.Mesh(eyeGeo, scleraMat);
+        eyeGroup.add(eyeball);
+
+        // Iris disk
+        const irisGeo = new THREE.CircleGeometry(0.0055, 32);
+        const iris = new THREE.Mesh(irisGeo, irisMat);
+        iris.position.set(0, 0, 0.0118);
+        eyeGroup.add(iris);
+
+        // Pupil disk
+        const pupilGeo = new THREE.CircleGeometry(0.002, 32);
+        const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+        pupil.position.set(0, 0, 0.0119);
+        eyeGroup.add(pupil);
+
+        return eyeGroup;
+      }
+
+      eyeMeshL = createEye(+0.032);
+      eyeMeshR = createEye(-0.032);
+      scene3D.add(eyeMeshL);
+      scene3D.add(eyeMeshR);
+
+      // Simple Stylized Head Silhouette Wireframe
+      const headGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.22, 24);
+      const headMat = new THREE.MeshBasicMaterial({ color: 0x1f2c3f, wireframe: true });
+      const headMesh = new THREE.Mesh(headGeo, headMat);
+      headMesh.position.set(0, 0, -0.05);
+      scene3D.add(headMesh);
+
+      renderer3D = new THREE.WebGLRenderer({ antialias: true });
+      renderer3D.setSize(w, h);
+      container.appendChild(renderer3D.domElement);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer3D.render(scene3D, camera3D);
+      }
+      animate();
+
+      // Trigger initial gaze
+      updateGazePhysics(0.0, 0.0);
+    }
+
+    window.addEventListener('load', loadData);
+  </script>
+</body>
+</html>

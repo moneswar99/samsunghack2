@@ -1,0 +1,5 @@
+# Samsung XR Hackathon 2026 - Track 01 Requirements
+# Synthetic Eye Movement & Virtual Camera Rendering
+
+Pillow>=10.0.0
+numpy>=1.24.0

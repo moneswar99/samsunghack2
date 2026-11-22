@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "samsung-xr-eyes"
+version = "1.0.0"
+authors = [
+  { name="DSS Srikar", email="dss.srikar@example.com" },
+]
+description = "Samsung XR Hackathon Track 01: Synthetic Eye Movement and Virtual Camera SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "Pillow>=10.0.0",
+]

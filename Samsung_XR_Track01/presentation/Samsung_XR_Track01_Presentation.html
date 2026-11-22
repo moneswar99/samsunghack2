@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Samsung XR Hackathon 2026 – Track 01 Presentation Deck</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #121824;
+      --border: #1e293b;
+      --accent: #2563eb;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .slide-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      padding: 60px 80px;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      transform: translateX(40px);
+    }
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .slide-tag {
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 42px; font-weight: 800; line-height: 1.2; margin-bottom: 20px; color: #fff; }
+    h2 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+    p, li { font-size: 18px; line-height: 1.6; color: #cbd5e1; }
+    ul { list-style: square; margin-left: 28px; margin-top: 12px; }
+    li { margin-bottom: 10px; }
+    b { color: #fff; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 20px; }
+    .card-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .card-box h3 { color: var(--cyan); font-size: 18px; margin-bottom: 10px; }
+    .card-box p { font-size: 15px; }
+
+    .code-box {
+      background: #05080f;
+      border: 1px solid #1a2333;
+      border-radius: 8px;
+      padding: 18px;
+      font-family: 'Consolas', monospace;
+      font-size: 14px;
+      color: #38bdf8;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 15px; }
+    th { background: #162030; color: var(--cyan); padding: 10px 14px; text-align: left; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1a2436; font-family: monospace; }
+
+    /* Footer Nav */
+    footer {
+      height: 64px;
+      background: #0b111a;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+    }
+    .nav-btn {
+      background: #1e293b;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .nav-btn:hover { background: var(--accent); }
+    .progress-dots { display: flex; gap: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #334155; cursor: pointer; }
+    .dot.active { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  </style>
+</head>
+<body>
+
+  <div class="slide-container">
+
+    <!-- SLIDE 1: Title -->
+    <div class="slide active">
+      <div class="slide-tag">SAMSUNG R&D INSTITUTE INDIA – XR HACKATHON 2026</div>
+      <h1>Synthetic Eye Movement &<br><span style="color:var(--cyan);">Virtual Camera Rendering</span></h1>
+      <p style="font-size: 22px; color: #94a3b8; max-width: 800px; margin-bottom: 24px;">
+        Track 01: High-fidelity, programmatically articulated 3D human gaze simulation with calibrated binocular convergence and camera ground-truth extraction.
+      </p>
+      <div style="display:flex; gap:16px;">
+        <div class="card-box" style="padding:14px 20px;">
+          <span style="font-size:12px; color:var(--muted);">TEAM PARTICIPANT</span>
+          <div style="font-size:16px; font-weight:700; color:#fff;">DSS Srikar / Track 01</div>
+        </div>
+        <div class="card-box" style="padding:14px 20px;">
+          <span style="font-size:12px; color:var(--muted);">VERIFICATION STATUS</span>
+          <div style="font-size:16px; font-weight:700; color:var(--green);">9 / 9 Tests Passing (100%)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Problem Statement -->
+    <div class="slide">
+      <div class="slide-tag">CHALLENGE CONTEXT</div>
+      <h2>The Problem: Synthetic Gaze in XR Headsets</h2>
+      <div class="grid-2">
+        <div>
+          <p>Next-generation XR headsets (Apple Vision Pro, Meta Quest, Samsung XR) rely critically on real-time eye tracking for:</p>
+          <ul>
+            <li><b>Foveated Rendering:</b> Concentrating GPU power on where the user looks, saving 40-70% shading power.</li>
+            <li><b>Spatial Interaction:</b> Intuitive gaze-and-pinch interaction.</li>
+            <li><b>Avatar Realism:</b> Expressive digital avatars in VR/MR.</li>
+          </ul>
+          <p style="margin-top:16px;"><b>The Core Bottleneck:</b> Training computer vision gaze models requires large datasets with <i>millimeter-accurate ground truth</i>. Most simulations merely translate pupil textures in 2D, introducing severe perspective and parallax distortion.</p>
+        </div>
+        <div class="card-box">
+          <h3>Official Challenge Requirements (Track 01)</h3>
+          <ul>
+            <li><b>True 3D Eyeball Rotation</b> around physical centers (NO 2D translation).</li>
+            <li><b>Two Controllable Bones:</b> <code>Eye_L</code> and <code>Eye_R</code>.</li>
+            <li><b>Calibrated Binocular Convergence:</b> Target at 35 cm forward from eye midpoint.</li>
+            <li><b>Fixed Virtual Camera:</b> 40 cm forward, 1024 × 1024 PNG.</li>
+            <li><b>Automated Suite:</b> 5-direction validation, 10 clockwise renders, <code>metadata.json</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Architecture & Calibration Math -->
+    <div class="slide">
+      <div class="slide-tag">MATHEMATICAL CALIBRATION</div>
+      <h2>Binocular Convergence & Camera Calibration</h2>
+      <div class="grid-2">
+        <div>
+          <div class="card-box" style="margin-bottom:16px;">
+            <h3>Fixation Target Geometry (35 cm)</h3>
+            <p>At fixation distance $D = 0.35\,\text{m}$, voluntary oculomotor ranges $\theta_{H,\max} = 25^\circ$, $\theta_{V,\max} = 20^\circ$:</p>
+            <div class="code-box" style="margin-top:8px;">
+X_target = 0.35 * tan(h * 25°)<br>
+Z_target = 0.35 * tan(v * 20°)<br>
+Target = (X_target, -0.35, Z_target)
+            </div>
+            <p style="margin-top:8px; font-size:14px;">At center rest ($h=0, v=0$), inward convergence angle is:<br>
+            $$\alpha = \arctan(0.032 / 0.35) = 5.23^\circ \text{ inward}$$</p>
+          </div>
+        </div>
+        <div>
+          <div class="card-box">
+            <h3>Camera Calibration ($K$) (40 cm)</h3>
+            <p>Fixed pinhole camera positioned at $(0.0, -0.40, 0.0)\,\text{m}$ facing $+Y$:</p>
+            <div class="code-box" style="margin-top:8px;">
+f = 50.0 mm | Sensor = 36.0 x 36.0 mm<br>
+fx = fy = 50 * (1024 / 36) = 1422.2222 px<br>
+cx = cy = 512.0 px
+            </div>
+            <div class="code-box" style="margin-top:8px; color:#34d399;">
+K = [<br>
+  [1422.2222,    0.0000, 512.0],<br>
+  [   0.0000, 1422.2222, 512.0],<br>
+  [   0.0000,    0.0000,   1.0]<br>
+]
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Five-Direction Validation -->
+    <div class="slide">
+      <div class="slide-tag">EMPIRICAL VALIDATION</div>
+      <h2>Five-Direction Displacement Validation</h2>
+      <p>Actual measured 2D pupil pixel displacement vectors (Top-Left Origin):</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Direction</th>
+            <th>Input (h, v)</th>
+            <th>Left Pupil (px)</th>
+            <th>Right Pupil (px)</th>
+            <th>ΔX Left</th>
+            <th>ΔX Right</th>
+            <th>ΔY Left</th>
+            <th>ΔY Right</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--cyan); font-weight:700;">Baseline</td>
+            <td>(0.0, 0.0)</td>
+            <td>(625.28, 512.00)</td>
+            <td>(398.72, 512.00)</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+          <tr>
+            <td>Left</td>
+            <td>(-1.0, 0.0)</td>
+            <td>(607.50, 512.00)</td>
+            <td>(379.52, 512.00)</td>
+            <td>-17.78</td>
+            <td>-19.20</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+          <tr>
+            <td>Right</td>
+            <td>(+1.0, 0.0)</td>
+            <td>(644.48, 512.00)</td>
+            <td>(416.50, 512.00)</td>
+            <td>+19.20</td>
+            <td>+17.78</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+          <tr>
+            <td>Up</td>
+            <td>(0.0, +1.0)</td>
+            <td>(625.31, 497.04)</td>
+            <td>(398.69, 497.04)</td>
+            <td>+0.03</td>
+            <td>-0.03</td>
+            <td>-14.96</td>
+            <td>-14.96</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+          <tr>
+            <td>Down</td>
+            <td>(0.0, -1.0)</td>
+            <td>(625.31, 526.96)</td>
+            <td>(398.69, 526.96)</td>
+            <td>+0.03</td>
+            <td>-0.03</td>
+            <td>+14.96</td>
+            <td>+14.96</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+          <tr>
+            <td>Reset</td>
+            <td>(0.0, 0.0)</td>
+            <td>(625.28, 512.00)</td>
+            <td>(398.72, 512.00)</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td style="color:var(--green); font-weight:700;">PASS</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px; font-size:14px; color:var(--muted);">
+        <b>Key Observation:</b> The slight asymmetry in horizontal gaze (-17.78 vs -19.20 px) confirms physically authentic binocular vergence differences between the adducting and abducting eyes at finite fixation distance.
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Ten Clockwise Gaze Samples -->
+    <div class="slide">
+      <div class="slide-tag">GAZE SEQUENCE</div>
+      <h2>Ten Clockwise Gaze Renders & Metadata</h2>
+      <div class="grid-2">
+        <div>
+          <p>Sampled continuously across a circular trajectory:</p>
+          <div class="code-box">
+theta_k = 2 * pi * k / 10<br>
+h = sin(theta_k)<br>
+v = cos(theta_k)   for k = 0, ..., 9
+          </div>
+          <ul>
+            <li>Frame 0 starts at top ($h=0.0, v=+1.0$).</li>
+            <li>Renders saved to <code>renders/frame_00.png</code> ... <code>frame_09.png</code>.</li>
+            <li>Complete metadata stored in <code>metadata.json</code>.</li>
+            <li>Compiled into high-res 5×2 <code>contact_sheet.png</code>.</li>
+          </ul>
+        </div>
+        <div class="card-box">
+          <h3>Sample Metadata Record (Frame 03)</h3>
+          <div class="code-box" style="font-size:12px;">
+{<br>
+  "frame": 3,<br>
+  "theta": 1.8850,<br>
+  "input": { "h": 0.9511, "v": -0.3090 },<br>
+  "eye_rotation_L": [-5.8374, -0.0, -160.7543],<br>
+  "eye_rotation_R": [-5.4609,  0.0, -151.9875],<br>
+  "pupil_center_2D_L": [643.473, 516.465],<br>
+  "pupil_center_2D_R": [415.629, 516.170],<br>
+  "camera_matrix": [[1422.22, 0.0, 512.0], ...]<br>
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Software Architecture & SDK -->
+    <div class="slide">
+      <div class="slide-tag">SOFTWARE ARCHITECTURE</div>
+      <h2>Python SDK & Localhost Web Dashboard</h2>
+      <div class="grid-3">
+        <div class="card-box">
+          <h3>📦 Python SDK (`wrapper/eyes.py`)</h3>
+          <p>Clean, object-oriented API interfacing directly with Blender:</p>
+          <ul style="font-size:14px; margin-left:18px;">
+            <li><code>eyes.move(h, v)</code></li>
+            <li><code>eyes.reset()</code> (zero drift)</li>
+            <li><code>eyes.render(path)</code></li>
+            <li>Sub-pixel 2D pupil tracking</li>
+          </ul>
+        </div>
+        <div class="card-box">
+          <h3>🕹️ Localhost Dashboard (Port 8000)</h3>
+          <p>Full web application with interactive tools:</p>
+          <ul style="font-size:14px; margin-left:18px;">
+            <li>2D Gaze Touchpad Joystick</li>
+            <li>Real-time 3D Three.js simulator</li>
+            <li>Animation player with reticle overlays</li>
+            <li>Metadata table explorer</li>
+          </ul>
+        </div>
+        <div class="card-box">
+          <h3>✅ Automated Test Suite</h3>
+          <p>9-point automated verification framework:</p>
+          <ul style="font-size:14px; margin-left:18px;">
+            <li>Physical bone pivot validation</li>
+            <li>Camera distance (40 cm) check</li>
+            <li>Five-direction displacement tests</li>
+            <li>Zero-drift reset reliability</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: Summary & Conclusion -->
+    <div class="slide">
+      <div class="slide-tag">SUBMISSION SUMMARY</div>
+      <h2>Track 01 Deliverables Complete</h2>
+      <div class="grid-2">
+        <div class="card-box">
+          <h3>Submission Checklist</h3>
+          <ul>
+            <li>✅ <b>Source Code:</b> Clean, modular, fully executable repo.</li>
+            <li>✅ <b>3D Scene:</b> <code>scene.blend</code> with photorealistic textures & rig.</li>
+            <li>✅ <b>Ten Renders:</b> 1024×1024 PNGs + <code>contact_sheet.png</code>.</li>
+            <li>✅ <b>Ground-Truth Metadata:</b> Calibrated <code>metadata.json</code>.</li>
+            <li>✅ <b>Automated Tests:</b> 9/9 tests passing in 0.087s.</li>
+            <li>✅ <b>Interactive Dashboard:</b> Running on <code>http://localhost:8000</code>.</li>
+            <li>✅ <b>Python SDK:</b> Wheel & source distribution package.</li>
+            <li>✅ <b>AI Disclosure:</b> Transparent statement compliant with rules.</li>
+          </ul>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:72px; margin-bottom:12px;">🏆</div>
+          <h2 style="color:var(--cyan);">Ready for Evaluation</h2>
+          <p style="color:var(--muted); font-size:16px;">
+            Samsung XR Hackathon 2026 – Track 01<br>
+            All requirements verified on local hardware.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <button class="nav-btn" onclick="prevSlide()">◀ Previous</button>
+    <div class="progress-dots" id="dots"></div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <span id="slide-num" style="font-family:monospace; color:var(--muted); font-size:14px;">1 / 7</span>
+      <button class="nav-btn" onclick="nextSlide()">Next ▶</button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const dotsContainer = document.getElementById('dots');
+    const slideNum = document.getElementById('slide-num');
+    let currentIndex = 0;
+
+    slides.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = `dot ${i === 0 ? 'active' : ''}`;
+      dot.onclick = () => goToSlide(i);
+      dotsContainer.appendChild(dot);
+    });
+
+    function updateSlide() {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === currentIndex);
+      });
+      document.querySelectorAll('.dot').forEach((d, i) => {
+        d.classList.toggle('active', i === currentIndex);
+      });
+      slideNum.innerText = `${currentIndex + 1} / ${slides.length}`;
+    }
+
+    function nextSlide() {
+      if (currentIndex < slides.length - 1) {
+        currentIndex++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateSlide();
+      }
+    }
+
+    function goToSlide(i) {
+      currentIndex = i;
+      updateSlide();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>
